@@ -1,0 +1,97 @@
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../src/generated/prisma"
+  binaryTargets = ["native", "linux-arm64-openssl-3.0.x", "debian-openssl-3.0.x", "windows"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum PaymentAttemptStatus {
+  PENDING
+  AUTHORIZED
+  SUCCESS
+  FAILED
+}
+
+model PaymentAttempt {
+  idempotencyKey String               @id @map("idempotency_key")
+  orderId        String?              @map("order_id") // Plain string, no FK
+  status         PaymentAttemptStatus @map("status")
+  provider       String               @map("provider")
+  transactionId  String?              @map("transaction_id")
+  responseData   Json?                @map("response_data")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([orderId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("payment_attempts")
+}
+
+enum RefundStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+model Refund {
+  refundId            String       @id @default(uuid()) @map("refund_id")
+  orderId             String       @map("order_id") // Plain string, no FK
+  paymentAttemptId    String       @map("payment_attempt_id")
+  refundTransactionId String       @map("refund_transaction_id")
+  amount              Decimal      @map("amount") @db.Decimal(10, 2)
+  status              RefundStatus @map("status")
+  provider            String       @map("provider")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([orderId])
+  @@index([status])
+  @@map("refunds")
+}
+
+model ProviderCustomer {
+  providerCustomerId String @id @default(uuid()) @map("provider_customer_id")
+  customerId         String @map("customer_id") // Plain string, no FK
+  provider           String @map("provider")
+  externalCustomerId String @map("external_customer_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([customerId, provider])
+  @@index([provider])
+  @@map("provider_customers")
+}
+
+model PreferredPaymentSettings {
+  preferredPaymentSettingsId String @id @default(uuid()) @map("preferred_payment_settings_id")
+  customerId                 String @unique @map("customer_id") // Plain string, no FK
+  paymentMethodId            String @map("payment_method_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  paymentMethods PaymentMethod[]
+
+  @@map("preferred_payment_settings")
+}
+
+model PaymentMethod {
+  paymentMethodId            String @id @default(uuid()) @map("payment_method_id")
+  paymentMethodName          String @map("payment_method_name")
+  paymentMethodData          Json   @map("payment_method_data")
+  preferredPaymentSettingsId String @map("preferred_payment_settings_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  preferredPaymentSettings PreferredPaymentSettings @relation(fields: [preferredPaymentSettingsId], references: [preferredPaymentSettingsId])
+
+  @@map("payment_methods")
+}
