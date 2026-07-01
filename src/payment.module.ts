@@ -11,6 +11,7 @@ import { stripeProvider } from './config/stripe.config';
 
 // Controllers
 import { StripeWebhookController } from './controllers/stripe-webhook.controller';
+import { PayPalWebhookController } from './controllers/paypal-webhook.controller';
 
 // Repositories
 import { PaymentAttemptRepository } from './repositories/payment-attempt.repository';
@@ -44,7 +45,7 @@ import { StalePaymentJob } from './jobs/stale-payment.job';
     EventEmitterModule.forRoot(),
     ScheduleModule.forRoot(),
   ],
-  controllers: [StripeWebhookController],
+  controllers: [StripeWebhookController, PayPalWebhookController],
   providers: [
     PrismaService,
     stripeProvider,
